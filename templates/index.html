@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock title %}
+{% block content %}
+<h1>Welcome to StellarStore</h1>
+{% endblock content %}
+{% block body %}
+{% load static %}
+<!-- ======= Portfolio Section ======= -->
+<div id="portfolio" class="portfolio-area area-padding fix">
+  <div class="container">
+
+    {% for message in messages %}
+
+    <div
+      class="alert alert-{{message.tags}} alert-dismissible fade show"
+      role="alert"
+    >
+      <strong>{{message}}</strong>
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="alert"
+        aria-label="Close"
+      ></button>
+    </div>
+    {% endfor %}
+    <div class="row">
+      <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+        <div class="section-headline text-center">
+          <h2>Products</h2>
+        </div>
+      </div>
+    </div>
+
+    {% for category_products in category_products %}
+    <h3 class="my-3 text-center text-success bg-light">
+      {{ category_products.category }} Flashsale
+    </h3>
+
+    <div class="container">
+      <div class="row">
+        {% for product in category_products.products %}
+        <div class="col-md-3 mt-3">
+          <img
+            src="{{ product.image.url }}"
+            class="card-img-top"
+            alt="not found"
+            height="200px"
+            width="150px"
+          />
+          <div class="card-body">
+            <h5 class="card-title mt-2" id="namepr{{ product.id }}">
+              {{ product.product_name }}
+            </h5>
+            <p class="card-text">{{ product.desc|slice:"0:53" }}...</p>
+            <h6 class="card-title mb-3">
+              Price:<span id="pricepr{{ product.id }}">{{ product.price }}</span>
+            </h6>
+            <span id="divpr{{ product.id }}" class="divpr">
+              <button id="pr{{ product.id }}" class="btn btn-danger cart btn-sm mt-0">
+                AddToCart <i class="fa-solid fa-cart-shopping"></i>
+              </button>
+            </span>
+            <a href="{{ product.image.url }}">
+              <button class="btn btn-dark btn-sm cart"><i class="fa-solid fa-eye">view</i></button></a
+              >
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <!-- End Portfolio Section -->
+</div>
+
+
+
+  <!-- Include JavaScript after rendering the HTML content -->
+<script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+
+
+<script>
+  // Find out the cart from local storage
+  if (localStorage.getItem("cart") == null) {
+    var cart = {};
+  } else {
+    cart = JSON.parse(localStorage.getItem("cart"));
+    updateCart(cart);
+  }
+
+  // Add or increment items in cart
+  $(".divpr").on("click", "button.cart", function() {
+    var idstr = $(this).attr("id");
+    var qty;
+    if (cart[idstr] !== undefined) {
+      qty = cart[idstr][0] + 1;
+      cart[idstr][0] = qty;
+      $(this).html(`<i class="fa-solid fa-cart-shopping"></i> ${qty}`);
+      $(this).removeClass('btn-danger').addClass('btn-success');
+    } else {
+      qty = 1;
+      var name = $("#namepr" + idstr).text();
+      var price = $("#pricepr" + idstr).text();
+      cart[idstr] = [qty, name, price];
+      $(this).html(`<i class="fa-solid fa-cart-shopping"></i> ${qty}`);
+      $(this).removeClass('btn-danger').addClass('btn-success');
+      // Add minus button dynamically
+      $(this).after(`<button id='minus${idstr}' class='btn btn-success minus'>-</button>`);
+    }
+    updateCart(cart);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    $("#cart").text(Object.keys(cart).length);
+    $("#popcart").click();
+  });
+
+  // Initialize popover
+  $("#popcart").popover();
+
+  // Update cart popover
+  function updatePopover(cart) {
+    var popStr = "<h5>Your Cart:</h5><div class='mx-2 my-2'>";
+    var i = 1;
+    for (var item in cart) {
+      popStr += "<b>" + i + "</b>. " + $("#namepr" + item).text().slice(0, 19) + "... <b>" + cart[item][0] + "</b> Qty<br>";
+      i++;
+    }
+    popStr += "</div><a href='/checkout'><button class='btn btn-success'>Checkout</button></a> <button class='btn btn-dark' onclick='clearCart()'>Clear Cart</button>";
+    $("#popcart").attr("data-content", popStr).popover("show");
+  }
+
+  // Clear cart
+  function clearCart() {
+    localStorage.removeItem("cart");
+    cart = {};
+    updateCart(cart);
+    // Close popover
+    $("#popcart").popover('hide');
+  }
+
+  // Update cart and display
+  function updateCart(cart) {
+    var sum = 0;
+    for (var item in cart) {
+      sum += cart[item][0];
+      $("#divpr" + item).html(
+        "<span id='valpr" +
+          item +
+          "'>" +
+          cart[item][0] +
+          "</span> <button id='minus" +
+          item +
+          "' class='btn btn-success minus'>-</button> <button id='plus" +
+          item +
+          "' class='btn btn-success plus'>+</button>"
+      );
+    }
+    $("#cart").text(sum);
+    updatePopover(cart);
+  }
+
+  // Increment quantity
+  $(".divpr").on("click", "button.plus", function() {
+    var id = $(this).attr("id").substring(4);
+    cart[id][0]++;
+    updateCart(cart);
+  });
+
+  // Decrement quantity
+  $(".divpr").on("click", "button.minus", function() {
+    var id = $(this).attr("id").substring(5);
+    if (cart[id][0] > 1) {
+      cart[id][0]--;
+    } else {
+      delete cart[id];
+      // Remove minus button if quantity is zero
+      $(this).remove();
+      // Revert add to cart button to initial state
+      $("#cart" + id).html("<i class='fa-solid fa-cart-shopping'></i> Add to Cart").removeClass('btn-success').addClass('btn-danger');
+    }
+    updateCart(cart);
+    localStorage.setItem("cart", JSON.stringify(cart));
+  });
+</script>
+
+
+
+
+
+
+  
+</div>
+{% endblock body %}
